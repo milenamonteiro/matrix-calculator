@@ -1,0 +1,7 @@
+{
+  "name": "matrix-solver",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue"
+}
