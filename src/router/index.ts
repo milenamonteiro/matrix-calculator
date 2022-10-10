@@ -4,7 +4,7 @@ import { RouteRecordRaw } from "vue-router";
 const routes: Array<RouteRecordRaw> = [
 	{
 		path: "",
-		redirect: "/OperacoesElementares",
+		component: () => import("../views/OperacoesElementares.vue"),
 	},
 	{
 		path: "/folder/:id",
