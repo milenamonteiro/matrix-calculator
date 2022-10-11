@@ -34,14 +34,24 @@
                         </ion-button>
                     </div>
                     <div id="tableInput" class="grid-item">
-                        <table id="matrixTable">
-                            <tr v-for="(row, index) in matrix" :key="index" v-bind:id="'row-'+index">
-                                <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
-                                    <ion-input placeholder="0" v-model="matrix[index][index2]">
-                                    </ion-input>
-                                </td>
-                            </tr>
-                        </table>
+                        <div class="table-wrapper">
+                            <table id="matrixTable">
+                                <tr v-for="(row, index) in matrix" :key="index" v-bind:id="'row-'+index">
+                                    <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
+                                        <ion-input placeholder="0" v-model="matrix[index][index2]">
+                                        </ion-input>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table id="unknownsTable">
+                                <tr v-for="(row, index) in unknownsColumn" :key="index" v-bind:id="'row2-'+index">
+                                    <td v-bind:id="'column2-'+index">
+                                        <ion-input placeholder="0" v-model="unknownsColumn[index]">
+                                        </ion-input>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                     <div id="actionButtons" class="grid-item">
                         <ion-button id="undo" color="primary" fill="outline" size="small"
@@ -76,14 +86,14 @@
                             <div class="operation grid-item" id="op1" v-bind:style="{ display: 'none' }">
                                 <div class="grid-container">
                                     <div class="grid-item">
-                                        <ion-item>
+                                        <ion-item class="variable">
                                             <ion-label position="fixed">
                                                 <div v-html=c></div>
                                             </ion-label>
                                             <ion-input v-model="op1Constant">
                                             </ion-input>
                                         </ion-item>
-                                        <ion-item>
+                                        <ion-item class="variable">
                                             <ion-label position="fixed">
                                                 <div v-html=Ri></div>
                                             </ion-label>
@@ -102,14 +112,14 @@
                             <div class="operation grid-item" id="op2" v-bind:style="{ display: 'none' }">
                                 <div class="grid-container">
                                     <div class="grid-item">
-                                        <ion-item>
+                                        <ion-item class="variable">
                                             <ion-label position="fixed">
                                                 <div v-html=Ri></div>
                                             </ion-label>
                                             <ion-input v-model="op2Row1">
                                             </ion-input>
                                         </ion-item>
-                                        <ion-item>
+                                        <ion-item class="variable">
                                             <ion-label position="fixed">
                                                 <div v-html=Rj></div>
                                             </ion-label>
@@ -128,21 +138,21 @@
                             <div class="operation grid-item" id="op3" v-bind:style="{ display: 'none' }">
                                 <div class="grid-container">
                                     <div class="grid-item">
-                                        <ion-item>
+                                        <ion-item class="variable">
                                             <ion-label position="fixed">
                                                 <div v-html=Ri></div>
                                             </ion-label>
                                             <ion-input v-model="op3Row">
                                             </ion-input>
                                         </ion-item>
-                                        <ion-item>
+                                        <ion-item class="variable">
                                             <ion-label position="fixed">
                                                 <div v-html=c></div>
                                             </ion-label>
                                             <ion-input v-model="op3Constant">
                                             </ion-input>
                                         </ion-item>
-                                        <ion-item>
+                                        <ion-item class="variable">
                                             <ion-label position="fixed">
                                                 <div v-html=Rpivot></div>
                                             </ion-label>
@@ -269,10 +279,10 @@ export default defineComponent({
             rows: 3,
             columns: 3,
             matrix: [['', '', ''], ['', '', ''], ['', '', '']],
+            unknownsColumn: ['', '', ''],
             operationExplained: "Multiplica uma linha i por uma constante c",
             undoPile: [[['', '', ''], ['', '', ''], ['', '', '']]],
             redoPile: [[['', '', ''], ['', '', ''], ['', '', '']]],
-            selectedLog: 0,
             op1Constant: '',
             op1Row: '',
             op2Row1: '',
@@ -355,6 +365,7 @@ export default defineComponent({
                 newRow.push('');
             }
             this.matrix.push(newRow);
+            this.unknownsColumn.push('');
         },
         removeDimension() {
             this.columns--;
@@ -363,6 +374,7 @@ export default defineComponent({
                 this.matrix[array].pop();
             }
             this.matrix.pop();
+            this.unknownsColumn.pop();
         },
         clearTable() {
             for (let i = 0; i < this.matrix.length; i++) {
@@ -424,6 +436,18 @@ export default defineComponent({
     row-gap: 20px;
 }
 
+.table-wrapper {
+    display: flex;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0px;
+    row-gap: 1px;
+}
+
+.table-wrapper table {
+    border-collapse: collapse;
+    position: relative;
+}
+
 #matrix {
     text-align: center;
     position: top;
@@ -436,9 +460,50 @@ export default defineComponent({
     text-align: center;
     position: top;
     margin-left: auto;
+    left: 0;
+    right: 0;
+}
+
+#unknownsTable {
+    text-align: center;
+    position: top;
+    margin-left: 10px;
     margin-right: auto;
     left: 0;
     right: 0;
+}
+
+#matrixTable td {
+    padding: 5px;
+    width: 70px;
+    height: 50px;
+}
+
+#unknownsTable td {
+    padding: 5px 5px 0px 0px;
+    width: 50px;
+    height: 50px;
+}
+
+table:before,
+table:after {
+    content: '';
+    height: 100%;
+    position: absolute;
+    border-color: rgb(156, 156, 156);
+    border-style: solid;
+    width: 10px;
+    top: -1px;
+}
+
+table:before {
+    left: -2px;
+    border-width: 2px 0px 2px 2px;
+}
+
+table:after {
+    right: -2px;
+    border-width: 2px 2px 2px 0px;
 }
 
 #actionButtons {
@@ -465,10 +530,31 @@ ion-select {
 }
 
 ion-item {
+    display: flex;
     width: 80%;
+    min-width: 40%;
+    position: center;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0px;
     margin-left: auto;
     margin-right: auto;
     --background: transparent;
+}
+
+.variable ion-label {
+    text-align: center;
+    border-collapse: collapse;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+}
+
+.variable ion-input {
+    text-align: center;
+    border-collapse: collapse;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
 }
 
 h2 {
