@@ -37,17 +37,18 @@
                         <table id="matrixTable">
                             <tr v-for="(row, index) in matrix" :key="index" v-bind:id="'row-'+index">
                                 <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
-                                    <ion-input type="number" placeholder="0" v-model="matrix[index][index2]"
-                                        @keypress="numberOnlyValidation($event)">
+                                    <ion-input placeholder="0" v-model="matrix[index][index2]">
                                     </ion-input>
                                 </td>
                             </tr>
                         </table>
                     </div>
                     <div id="actionButtons" class="grid-item">
-                        <ion-button id="undo" color="primary" fill="outline" size="small" @click="undoAction">Desfazer
+                        <ion-button id="undo" color="primary" fill="outline" size="small"
+                            :disabled="undoPile.length == 1" @click="undoAction">Desfazer
                         </ion-button>
-                        <ion-button id="redo" color="primary" fill="outline" size="small" @click="redoAction">Refazer
+                        <ion-button id="redo" color="primary" fill="outline" size="small"
+                            :disabled="redoPile.length == 1" @click="redoAction">Refazer
                         </ion-button>
                     </div>
                     <div class="hr grid-item">
@@ -79,15 +80,14 @@
                                             <ion-label position="fixed">
                                                 <div v-html=c></div>
                                             </ion-label>
-                                            <ion-input type="number" v-model="op1Constant"
-                                                @keypress="numberOnlyValidation($event)"></ion-input>
+                                            <ion-input v-model="op1Constant">
+                                            </ion-input>
                                         </ion-item>
                                         <ion-item>
                                             <ion-label position="fixed">
                                                 <div v-html=Ri></div>
                                             </ion-label>
-                                            <ion-input type="number" v-model="op1Row"
-                                                @keypress="numberOnlyValidation($event)">
+                                            <ion-input v-model="op1Row">
                                             </ion-input>
                                         </ion-item>
                                     </div>
@@ -106,15 +106,15 @@
                                             <ion-label position="fixed">
                                                 <div v-html=Ri></div>
                                             </ion-label>
-                                            <ion-input type="number" v-model="op2Row1"
-                                                @keypress="numberOnlyValidation($event)"></ion-input>
+                                            <ion-input v-model="op2Row1">
+                                            </ion-input>
                                         </ion-item>
                                         <ion-item>
                                             <ion-label position="fixed">
                                                 <div v-html=Rj></div>
                                             </ion-label>
-                                            <ion-input type="number" v-model="op2Row2"
-                                                @keypress="numberOnlyValidation($event)"></ion-input>
+                                            <ion-input v-model="op2Row2">
+                                            </ion-input>
                                         </ion-item>
                                     </div>
                                     <div class="grid-item">
@@ -132,22 +132,22 @@
                                             <ion-label position="fixed">
                                                 <div v-html=Ri></div>
                                             </ion-label>
-                                            <ion-input type="number" v-model="op3Row"
-                                                @keypress="numberOnlyValidation($event)"></ion-input>
+                                            <ion-input v-model="op3Row">
+                                            </ion-input>
                                         </ion-item>
                                         <ion-item>
                                             <ion-label position="fixed">
                                                 <div v-html=c></div>
                                             </ion-label>
-                                            <ion-input type="number" v-model="op3Constant"
-                                                @keypress="numberOnlyValidation($event)"></ion-input>
+                                            <ion-input v-model="op3Constant">
+                                            </ion-input>
                                         </ion-item>
                                         <ion-item>
                                             <ion-label position="fixed">
                                                 <div v-html=Rpivot></div>
                                             </ion-label>
-                                            <ion-input type="number" v-model="op3PivotRow"
-                                                @keypress="numberOnlyValidation($event)"></ion-input>
+                                            <ion-input v-model="op3PivotRow">
+                                            </ion-input>
                                         </ion-item>
                                     </div>
                                     <div class="grid-item">
@@ -168,12 +168,46 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, nextTick } from 'vue';
 import {
     IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar, IonSelect,
     IonSelectOption, IonInput, IonButton, IonLabel, IonItem
 } from '@ionic/vue';
 import katex from 'katex';
+import mathjs, { string } from "mathjs";
+
+
+function clone(obj: any): any {
+    // Handle the 3 simple types, and null or undefined
+    if (null == obj || "object" != typeof obj) return obj;
+
+    // Handle Date
+    if (obj instanceof Date) {
+        var copy = new Date();
+        copy.setTime(obj.getTime());
+        return copy;
+    }
+
+    // Handle Array
+    if (obj instanceof Array) {
+        var copy2 = [];
+        for (var i = 0, len = obj.length; i < len; i++) {
+            copy2[i] = clone(obj[i]);
+        }
+        return copy2;
+    }
+
+    // Handle Object
+    if (obj instanceof Object) {
+        var copy3 = {};
+        for (var attr in Object(obj)) {
+            if (Object.prototype.hasOwnProperty.call(obj, attr)) (copy3 as any)[attr] = clone(obj[attr]);
+        }
+        return copy3;
+    }
+
+    throw new Error("Unable to copy obj! Its type isn't supported.");
+}
 
 export default defineComponent({
     name: 'OperacoesElementares',
@@ -206,7 +240,29 @@ export default defineComponent({
             throwOnError: false
         });
 
-        return { equation, Ri, c, Rj, Rpivot };
+        const evaluateMatrix = (matrix: string[][]) => {
+            let result = [];
+            for (let i = 0; i < matrix.length; i++) {
+                let row = [];
+                for (let j = 0; j < matrix[i].length; j++) {
+                    row.push(mathjs.evaluate(matrix[i][j]));
+                }
+                result.push(row);
+            }
+            return result;
+        }
+
+        const addToUndoPile = async (matrix: string[][], undoPile: string[][][]) => {
+            undoPile.push(matrix);
+            return undoPile;
+        }
+
+        const addToRedoPile = async (matrix: string[][], redoPile: string[][][]) => {
+            redoPile.push(matrix);
+            return redoPile;
+        }
+
+        return { equation, Ri, c, Rj, Rpivot, evaluateMatrix, addToUndoPile, addToRedoPile };
     },
     data() {
         return {
@@ -227,14 +283,6 @@ export default defineComponent({
         }
     },
     methods: {
-        numberOnlyValidation(event: any) {
-            const pattern = /[0-9.,]/;
-            let inputChar = String(event.key);
-            if (!pattern.test(inputChar)) {
-                // invalid character, prevent input
-                event.preventDefault();
-            }
-        },
         selectOperation(value: any) {
             var equation = document.getElementById("equation") as HTMLElement;
             var explanation = document.getElementById("explanation") as HTMLElement;
@@ -274,20 +322,24 @@ export default defineComponent({
                 op3.style.display = "block";
             }
         },
-        op1Function() {
-            this.undoPile.push(this.matrix);
+        async op1Function() {
+            if (this.op1Constant == '' || this.op1Row == '') {
+                alert("Preencha todos os campos");
+                return;
+            }
+            this.undoPile = await this.addToUndoPile(clone(this.matrix), this.undoPile);
             for (var i = 0; i < this.columns; i++) {
                 this.matrix[+this.op1Row - 1][i] = String(+this.op1Constant * +this.matrix[+this.op1Row - 1][i]);
             }
         },
-        op2Function() {
-            this.undoPile.push(this.matrix);
+        async op2Function() {
+            this.undoPile = await this.addToUndoPile(clone(this.matrix), this.undoPile);
             var aux = this.matrix[+this.op2Row1 - 1];
             this.matrix[+this.op2Row1 - 1] = this.matrix[+this.op2Row2 - 1];
             this.matrix[+this.op2Row2 - 1] = aux;
         },
-        op3Function() {
-            this.undoPile.push(this.matrix);
+        async op3Function() {
+            this.undoPile = await this.addToUndoPile(clone(this.matrix), this.undoPile);
             for (var i = 0; i < this.columns; i++) {
                 this.matrix[+this.op3Row - 1][i] = String(+this.matrix[+this.op3Row - 1][i] + +this.op3Constant * +this.matrix[+this.op3PivotRow - 1][i]);
             }
@@ -322,18 +374,18 @@ export default defineComponent({
         textInput(event: any) {
             this.matrix[this.rows][this.columns] = event.target.value;
         },
-        undoAction() {
+        async undoAction() {
             if (this.undoPile.length > 1) {
-                this.matrix = this.undoPile[0];
-                this.redoPile.push(this.undoPile[0]);
-                this.undoPile.shift();
+                let lastAction = clone(this.undoPile.pop()) as string[][];
+                this.redoPile = await this.addToRedoPile(clone(this.matrix), clone(this.redoPile));
+                this.matrix = clone(lastAction);
             }
         },
-        redoAction() {
+        async redoAction() {
             if (this.redoPile.length > 1) {
-                this.matrix = this.redoPile[0];
-                this.undoPile.push(this.redoPile[0]);
-                this.redoPile.shift();
+                let lastAction = clone(this.redoPile.pop()) as string[][];
+                this.undoPile = await this.addToUndoPile(clone(this.matrix), clone(this.undoPile));
+                this.matrix = clone(lastAction);
             }
         },
     }
@@ -413,7 +465,7 @@ ion-select {
 }
 
 ion-item {
-    width: 20%;
+    width: 80%;
     margin-left: auto;
     margin-right: auto;
     --background: transparent;

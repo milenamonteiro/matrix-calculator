@@ -1,7 +1,7 @@
 {
     "hosting": {
         "site": "matrix-calculator",
-        "public": "public",
+        "public": "dist",
         "ignore": [
             "firebase.json",
             "**/.*",

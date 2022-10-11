@@ -3,12 +3,8 @@ import { RouteRecordRaw } from "vue-router";
 
 const routes: Array<RouteRecordRaw> = [
 	{
-		path: "",
+		path: "/",
 		component: () => import("../views/OperacoesElementares.vue"),
-	},
-	{
-		path: "/folder/:id",
-		component: () => import("../views/FolderPage.vue"),
 	},
 	{
 		path: "/OperacoesElementares",
