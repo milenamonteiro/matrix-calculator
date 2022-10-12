@@ -14,6 +14,14 @@ const routes: Array<RouteRecordRaw> = [
 		path: "/MatrizInversa",
 		component: () => import("../views/MatrizInversa.vue"),
 	},
+	{
+		path: "/Determinante",
+		component: () => import("../views/DeterminanteMatriz.vue"),
+	},
+	{
+		path: "/Multiplicacao",
+		component: () => import("../views/MultiplicarMatrizes.vue"),
+	},
 ];
 
 const router = createRouter({

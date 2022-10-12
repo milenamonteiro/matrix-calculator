@@ -4,8 +4,6 @@ import router from "./router";
 
 import { IonicVue } from "@ionic/vue";
 
-import katex from "katex";
-
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/vue/css/core.css";
 
@@ -28,30 +26,6 @@ import "./theme/variables.css";
 import "../node_modules/katex/dist/katex.min.css";
 
 const app = createApp(App).use(IonicVue).use(router);
-
-app.component("katex-span", {
-	props: ["expr"],
-	computed: {
-		math() {
-			return katex.renderToString(this.expr);
-		},
-	},
-	render() {
-		return App.h("span", { innerHTML: this.math });
-	},
-});
-
-app.component("katex-div", {
-	props: ["expr"],
-	computed: {
-		math() {
-			return katex.renderToString(this.expr);
-		},
-	},
-	render() {
-		return App.h("div", { innerHTML: this.math });
-	},
-});
 
 router.isReady().then(() => {
 	app.mount("#app");

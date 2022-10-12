@@ -5,7 +5,12 @@
                 <ion-content>
                     <ion-list id="inbox-list">
                         <ion-list-header>Calculadora</ion-list-header>
-                        <ion-note>katia_me_da_um_chocolate@gmail.com</ion-note>
+                        <ion-list>
+                            <ion-item lines="none">
+                                <ion-toggle @ionChange="onClick($event)" slot="end">
+                                </ion-toggle>
+                            </ion-item>
+                        </ion-list>
 
                         <ion-menu-toggle auto-hide="false" v-for="(p, i) in appPages" :key="i">
                             <ion-item @click="selectedIndex = i" router-direction="root" :router-link="p.url"
@@ -23,10 +28,19 @@
 </template>
 
 <script lang="ts">
-import { IonApp, IonContent, IonIcon, IonItem, IonLabel, IonList, IonListHeader, IonMenu, IonMenuToggle, IonNote, IonRouterOutlet, IonSplitPane } from '@ionic/vue';
+import {
+    IonApp, IonContent, IonIcon, IonItem, IonLabel, IonList, IonListHeader,
+    IonMenu, IonToggle, IonMenuToggle, IonRouterOutlet, IonSplitPane
+} from '@ionic/vue';
 import { defineComponent, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { archiveOutline, archiveSharp, bookmarkOutline, bookmarkSharp, cubeOutline, cubeSharp, heartOutline, heartSharp, invertModeSharp, mailOutline, mailSharp, paperPlaneOutline, paperPlaneSharp, trashOutline, trashSharp, warningOutline, warningSharp } from 'ionicons/icons';
+import {
+    archiveOutline, archiveSharp, bookmarkOutline, bookmarkSharp,
+    cubeSharp, heartOutline, heartSharp, invertModeSharp, mailOutline, mailSharp,
+    paperPlaneOutline, paperPlaneSharp, trashOutline, trashSharp, warningOutline,
+    warningSharp
+} from 'ionicons/icons';
+
 
 export default defineComponent({
     name: 'App',
@@ -40,9 +54,9 @@ export default defineComponent({
         IonListHeader,
         IonMenu,
         IonMenuToggle,
-        IonNote,
         IonRouterOutlet,
         IonSplitPane,
+        IonToggle
     },
     setup() {
         const selectedIndex = ref(0);
@@ -58,10 +72,34 @@ export default defineComponent({
                 url: '/MatrizInversa',
                 iosIcon: invertModeSharp,
                 mdIcon: invertModeSharp
+            },
+            {
+                title: 'Determinante',
+                url: '/Determinante',
+                iosIcon: invertModeSharp,
+                mdIcon: invertModeSharp
+            },
+            {
+                title: 'Multiplicação',
+                url: '/Multiplicacao',
+                iosIcon: invertModeSharp,
+                mdIcon: invertModeSharp
             }
         ];
 
         const route = useRoute();
+
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+        toggleDarkTheme(prefersDark.matches);
+
+        // Listen for changes to the prefers-color-scheme media query
+        prefersDark.addListener((mediaQuery) => toggleDarkTheme(mediaQuery.matches));
+
+        // Add or remove the "dark" class based on if the media query matches
+        function toggleDarkTheme(shouldAdd: any) {
+            document.body.classList.toggle('dark', shouldAdd);
+        }
 
         return {
             selectedIndex,
@@ -80,7 +118,21 @@ export default defineComponent({
             trashSharp,
             warningOutline,
             warningSharp,
+            prefersDark,
             isSelected: (url: string) => url === route.path ? 'selected' : ''
+        }
+    },
+    methods: {
+        onClick(event: any) {
+            document.body.classList.toggle('dark', event.detail.checked);
+        },
+
+        colorTest(systemInitiatedDark: any) {
+            if (systemInitiatedDark.matches) {
+                document.body.setAttribute('data-theme', 'dark');
+            } else {
+                document.body.setAttribute('data-theme', 'light');
+            }
         }
     }
 });

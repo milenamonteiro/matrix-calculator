@@ -5,19 +5,19 @@
                 <ion-buttons slot="start">
                     <ion-menu-button color="primary"></ion-menu-button>
                 </ion-buttons>
-                <ion-title>Matriz Inversa</ion-title>
+                <ion-title>Multiplicação</ion-title>
             </ion-toolbar>
         </ion-header>
 
         <ion-content :fullscreen="true">
             <ion-header collapse="condense">
                 <ion-toolbar>
-                    <ion-title size="large">Matriz Inversa</ion-title>
+                    <ion-title size="large">Multiplicação</ion-title>
                 </ion-toolbar>
             </ion-header>
 
             <div id="container">
-                <strong class="capitalize">Matriz Inversa</strong>
+                <strong class="capitalize">Multiplicar Matrizes</strong>
                 <p>Insira os valores na matriz</p>
 
                 <div id="matrix" class="grid-container">
@@ -96,7 +96,7 @@ function evaluateMatrix(matrix: any): any {
 }
 
 export default defineComponent({
-    name: 'MatrizInversa',
+    name: 'MultiplicarMatrizes',
     components: {
         IonButtons,
         IonContent,

@@ -21,17 +21,21 @@
                 <p>Insira os valores na matriz</p>
 
                 <div id="matrix" class="grid-container">
-                    <div id="tableButtons" class="grid-item">
-                        <ion-button id="addDimension" color="primary" fill="outline" size="small" @click="addDimension">
-                            +
-                        </ion-button>
-                        <ion-button id="removeDimension" color="primary" fill="outline" size="small"
-                            @click="removeDimension">-
-                        </ion-button>
-                        <ion-button id="clearTable" color="primary" fill="outline" size="small" @click="clearTable">
-                            Limpar</ion-button>
-                        <ion-button id="textInput" color="primary" fill="outline" size="small" @click="textInput">Texto
-                        </ion-button>
+                    <div id="tableOptions" class="grid-item dimensoes">
+                        <ion-label class="item-dimensoes">Dimensões</ion-label>
+                        <ion-item class="item-dimensoes" fill="solid" ref="rowInput">
+                            <ion-input type="number" @ionInput="validateRowInput" value="3">
+                            </ion-input>
+                            <ion-note slot="helper">Linhas</ion-note>
+                            <ion-note slot="error">Valor inválido</ion-note>
+                        </ion-item>
+                        <ion-label class="item-dimensoes">x</ion-label>
+                        <ion-item class="item-dimensoes" fill="solid" ref="columnInput">
+                            <ion-input type="number" @ionInput="validateColumnInput" value="3">
+                            </ion-input>
+                            <ion-note slot="helper">Colunas</ion-note>
+                            <ion-note slot="error">Valor inválido</ion-note>
+                        </ion-item>
                     </div>
                     <div id="tableInput" class="grid-item">
                         <div class="table-wrapper">
@@ -60,6 +64,9 @@
                         <ion-button id="redo" color="primary" fill="outline" size="small"
                             :disabled="redoPile.length == 1" @click="redoAction">Refazer
                         </ion-button>
+                        <ion-button id="clearTable" :disabled="isMatrixEmpty()" color="primary" fill="outline"
+                            size="small" @click="clearTable">
+                            Limpar tabela</ion-button>
                     </div>
                     <div class="hr grid-item">
                     </div>
@@ -69,7 +76,8 @@
                         </ion-label>
                     </div>
                     <div class="grid-item">
-                        <ion-select placeholder="Selecionar operação" @ionChange="selectOperation($event.detail.value)">
+                        <ion-select class="alerta-customizado" placeholder="Selecionar operação"
+                            @ionChange="selectOperation($event.detail.value)">
                             <ion-select-option value="op1">Constante x linha</ion-select-option>
                             <ion-select-option value="op2">Permutar linhas</ion-select-option>
                             <ion-select-option value="op3">Somar a um pivô x constante</ion-select-option>
@@ -178,46 +186,48 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, nextTick } from 'vue';
+import { defineComponent } from 'vue';
 import {
     IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar, IonSelect,
-    IonSelectOption, IonInput, IonButton, IonLabel, IonItem
+    IonSelectOption, IonInput, IonButton, IonLabel, IonItem, IonNote
 } from '@ionic/vue';
 import katex from 'katex';
-import mathjs, { string } from "mathjs";
+import { create, all } from "mathjs";
+//import { parse, Expression } from "algebra.js";
+import nerdamer from "nerdamer/all";
 
-
-function clone(obj: any): any {
-    // Handle the 3 simple types, and null or undefined
-    if (null == obj || "object" != typeof obj) return obj;
-
-    // Handle Date
-    if (obj instanceof Date) {
-        var copy = new Date();
-        copy.setTime(obj.getTime());
-        return copy;
-    }
-
-    // Handle Array
-    if (obj instanceof Array) {
-        var copy2 = [];
-        for (var i = 0, len = obj.length; i < len; i++) {
-            copy2[i] = clone(obj[i]);
+function evaluateMatrix(matrix: any): any {
+    let result = structuredClone(matrix);
+    for (let i = 0; i < result.length; i++) {
+        for (let j = 0; j < result[i].length; j++) {
+            if (result[i][j] != '') {
+                try {
+                    result[i][j] = nerdamer(result[i][j]).text('fractions');
+                }
+                catch (e) {
+                    console.log(e);
+                }
+            }
         }
-        return copy2;
     }
-
-    // Handle Object
-    if (obj instanceof Object) {
-        var copy3 = {};
-        for (var attr in Object(obj)) {
-            if (Object.prototype.hasOwnProperty.call(obj, attr)) (copy3 as any)[attr] = clone(obj[attr]);
-        }
-        return copy3;
-    }
-
-    throw new Error("Unable to copy obj! Its type isn't supported.");
+    return result;
 }
+
+function evaluateUnknownsMatrix(matrix: any): any {
+    let result = structuredClone(matrix);
+    for (let i = 0; i < result.length; i++) {
+        if (result[i] != '') {
+            try {
+                result[i] = nerdamer(result[i]).text('fractions');
+            }
+            catch (e) {
+                console.log(e);
+            }
+        }
+    }
+    return result;
+}
+
 
 export default defineComponent({
     name: 'OperacoesElementares',
@@ -231,7 +241,11 @@ export default defineComponent({
         IonToolbar,
         IonSelect,
         IonSelectOption,
-        IonInput, IonButton, IonLabel, IonItem
+        IonInput,
+        IonButton,
+        IonLabel,
+        IonItem,
+        IonNote
     },
     setup() {
         const equation = katex.renderToString("c\\cdot R_i", {
@@ -250,29 +264,7 @@ export default defineComponent({
             throwOnError: false
         });
 
-        const evaluateMatrix = (matrix: string[][]) => {
-            let result = [];
-            for (let i = 0; i < matrix.length; i++) {
-                let row = [];
-                for (let j = 0; j < matrix[i].length; j++) {
-                    row.push(mathjs.evaluate(matrix[i][j]));
-                }
-                result.push(row);
-            }
-            return result;
-        }
-
-        const addToUndoPile = async (matrix: string[][], undoPile: string[][][]) => {
-            undoPile.push(matrix);
-            return undoPile;
-        }
-
-        const addToRedoPile = async (matrix: string[][], redoPile: string[][][]) => {
-            redoPile.push(matrix);
-            return redoPile;
-        }
-
-        return { equation, Ri, c, Rj, Rpivot, evaluateMatrix, addToUndoPile, addToRedoPile };
+        return { equation, Ri, c, Rj, Rpivot };
     },
     data() {
         return {
@@ -283,16 +275,101 @@ export default defineComponent({
             operationExplained: "Multiplica uma linha i por uma constante c",
             undoPile: [[['', '', ''], ['', '', ''], ['', '', '']]],
             redoPile: [[['', '', ''], ['', '', ''], ['', '', '']]],
+            undoUnknownsPile: [['', '', '']],
+            redoUnknownsPile: [['', '', '']],
             op1Constant: '',
             op1Row: '',
             op2Row1: '',
             op2Row2: '',
             op3Row: '',
             op3Constant: '',
-            op3PivotRow: ''
+            op3PivotRow: '',
         }
     },
     methods: {
+        isMatrixEmpty(): boolean {
+            for (let i = 0; i < this.matrix.length; i++) {
+                for (let j = 0; j < this.matrix[i].length; j++) {
+                    if (this.matrix[i][j] != '') {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        },
+        adjustColumns(newColumns: number) {
+            if (newColumns > this.columns) {
+                for (let array in this.matrix) {
+                    for (let i = this.columns; i < newColumns; i++) {
+                        this.matrix[array].push('');
+                    }
+                }
+            }
+            else {
+                for (let array in this.matrix) {
+                    for (let i = this.columns; i > newColumns; i--) {
+                        this.matrix[array].pop();
+                    }
+                }
+            }
+            this.columns = newColumns;
+        },
+        adjustRows(newRows: number) {
+            if (newRows > this.rows) {
+                for (let i = 0; i < newRows - this.rows; i++) {
+                    let newRow = [];
+                    for (let j = 0; j < this.columns; j++) {
+                        newRow.push('');
+                    }
+                    this.matrix.push(newRow);
+                    this.unknownsColumn.push('');
+                }
+            }
+            else {
+                for (let i = 0; i < this.rows - newRows; i++) {
+                    this.matrix.pop();
+                    this.unknownsColumn.pop();
+                }
+            }
+            this.rows = newRows;
+        },
+        validateInput(value: any) {
+            if (value == '') {
+                return false;
+            }
+            try {
+                return isFinite(value) && value > 0;
+            }
+            catch (e) {
+                return false;
+            }
+        },
+        validateRowInput(ev: any) {
+            const value = ev.target.value;
+
+            (this.$refs as any).rowInput.$el.classList.remove('ion-valid');
+            (this.$refs as any).rowInput.$el.classList.remove('ion-invalid');
+
+            if (this.validateInput(value)) {
+                (this.$refs as any).rowInput.$el.classList.add('ion-valid');
+                this.adjustRows(value);
+            } else {
+                (this.$refs as any).rowInput.$el.classList.add('ion-invalid');
+            }
+        },
+        validateColumnInput(ev: any) {
+            const value = ev.target.value;
+
+            (this.$refs as any).columnInput.$el.classList.remove('ion-valid');
+            (this.$refs as any).columnInput.$el.classList.remove('ion-invalid');
+
+            if (this.validateInput(value)) {
+                (this.$refs as any).columnInput.$el.classList.add('ion-valid');
+                this.adjustColumns(value);
+            } else {
+                (this.$refs as any).columnInput.$el.classList.add('ion-invalid');
+            }
+        },
         selectOperation(value: any) {
             var equation = document.getElementById("equation") as HTMLElement;
             var explanation = document.getElementById("explanation") as HTMLElement;
@@ -337,44 +414,94 @@ export default defineComponent({
                 alert("Preencha todos os campos");
                 return;
             }
-            this.undoPile = await this.addToUndoPile(clone(this.matrix), this.undoPile);
+            if (+this.op1Row > this.rows || +this.op1Row < 1) {
+                alert("A linha escolhida não existe");
+                return;
+            }
+            this.matrix = evaluateMatrix(this.matrix);
+            this.unknownsColumn = evaluateUnknownsMatrix(this.unknownsColumn);
+            this.op1Constant = nerdamer(this.op1Constant).text('fractions');
+            this.undoPile.push(structuredClone(this.matrix));
+            this.undoUnknownsPile.push(structuredClone(this.unknownsColumn));
+
             for (var i = 0; i < this.columns; i++) {
-                this.matrix[+this.op1Row - 1][i] = String(+this.op1Constant * +this.matrix[+this.op1Row - 1][i]);
+                let value = structuredClone(this.matrix[+this.op1Row - 1][i]);
+                if (value == '') {
+                    value = '0';
+                }
+                else {
+                    this.matrix[+this.op1Row - 1][i] = nerdamer(value).multiply(this.op1Constant).text('fractions');
+                }
+            }
+
+            let unknown = structuredClone(this.unknownsColumn[+this.op1Row - 1]);
+            if (unknown == '') {
+                unknown = '0';
+            }
+            else {
+                this.unknownsColumn[+this.op1Row - 1] = nerdamer(unknown).multiply(this.op1Constant).text('fractions');
             }
         },
         async op2Function() {
-            this.undoPile = await this.addToUndoPile(clone(this.matrix), this.undoPile);
+            if (this.op2Row1 == '' || this.op2Row2 == '') {
+                alert("Preencha todos os campos");
+                return;
+            }
+            if (+this.op2Row1 > this.rows || +this.op2Row1 < 1 || +this.op2Row2 > this.rows || +this.op2Row2 < 1) {
+                alert("A linha escolhida não existe");
+                return;
+            }
+            this.matrix = evaluateMatrix(this.matrix);
+            this.unknownsColumn = evaluateUnknownsMatrix(this.unknownsColumn);
+            this.undoPile.push(structuredClone(this.matrix));
+            this.undoUnknownsPile.push(structuredClone(this.unknownsColumn));
+
             var aux = this.matrix[+this.op2Row1 - 1];
             this.matrix[+this.op2Row1 - 1] = this.matrix[+this.op2Row2 - 1];
             this.matrix[+this.op2Row2 - 1] = aux;
+
+            var unknownAux = this.unknownsColumn[+this.op2Row1 - 1];
+            this.unknownsColumn[+this.op2Row1 - 1] = this.unknownsColumn[+this.op2Row2 - 1];
+            this.unknownsColumn[+this.op2Row2 - 1] = unknownAux;
         },
         async op3Function() {
-            this.undoPile = await this.addToUndoPile(clone(this.matrix), this.undoPile);
+            if (this.op3PivotRow == '' || this.op3Row == '' || this.op3Constant == '') {
+                alert("Preencha todos os campos");
+                return;
+            }
+            if (+this.op3PivotRow > this.rows || +this.op3PivotRow < 1 || +this.op3Row > this.rows || +this.op3Row < 1) {
+                alert("A linha escolhida não existe");
+                return;
+            }
+            this.matrix = evaluateMatrix(this.matrix);
+            this.unknownsColumn = evaluateUnknownsMatrix(this.unknownsColumn);
+            this.op3Constant = nerdamer(this.op3Constant).text('fractions');
+            this.undoPile.push(structuredClone(this.matrix));
+            this.undoUnknownsPile.push(structuredClone(this.unknownsColumn));
+
             for (var i = 0; i < this.columns; i++) {
-                this.matrix[+this.op3Row - 1][i] = String(+this.matrix[+this.op3Row - 1][i] + +this.op3Constant * +this.matrix[+this.op3PivotRow - 1][i]);
+                let value = structuredClone(this.matrix[+this.op3Row - 1][i]);
+                if (value == '') {
+                    value = '0';
+                }
+                else {
+                    this.matrix[+this.op3Row - 1][i] = nerdamer(value)
+                        .add(nerdamer(this.matrix[+this.op3PivotRow - 1][i])
+                            .multiply(this.op3Constant))
+                        .text('fractions');
+                }
             }
-        },
-        addDimension() {
-            this.columns++;
-            this.rows++;
-            let newRow = [];
-            for (let array in this.matrix) {
-                this.matrix[array].push('');
+
+            let unknown = structuredClone(this.unknownsColumn[+this.op3Row - 1]);
+            if (unknown == '') {
+                unknown = '0';
             }
-            for (let i = 0; i < this.columns; i++) {
-                newRow.push('');
+            else {
+                this.unknownsColumn[+this.op3Row - 1] = nerdamer(unknown)
+                    .add(nerdamer(this.unknownsColumn[+this.op3PivotRow - 1])
+                        .multiply(this.op3Constant))
+                    .text('fractions');
             }
-            this.matrix.push(newRow);
-            this.unknownsColumn.push('');
-        },
-        removeDimension() {
-            this.columns--;
-            this.rows--;
-            for (let array in this.matrix) {
-                this.matrix[array].pop();
-            }
-            this.matrix.pop();
-            this.unknownsColumn.pop();
         },
         clearTable() {
             for (let i = 0; i < this.matrix.length; i++) {
@@ -383,21 +510,24 @@ export default defineComponent({
                 }
             }
         },
-        textInput(event: any) {
-            this.matrix[this.rows][this.columns] = event.target.value;
-        },
         async undoAction() {
             if (this.undoPile.length > 1) {
-                let lastAction = clone(this.undoPile.pop()) as string[][];
-                this.redoPile = await this.addToRedoPile(clone(this.matrix), clone(this.redoPile));
-                this.matrix = clone(lastAction);
+                let lastAction = structuredClone(this.undoPile.pop()) as string[][];
+                let lastUnknownsAction = structuredClone(this.undoUnknownsPile.pop()) as string[];
+                this.redoUnknownsPile.push(structuredClone(this.unknownsColumn));
+                this.redoPile.push(structuredClone(this.matrix));
+                this.matrix = structuredClone(lastAction);
+                this.unknownsColumn = structuredClone(lastUnknownsAction);
             }
         },
         async redoAction() {
             if (this.redoPile.length > 1) {
-                let lastAction = clone(this.redoPile.pop()) as string[][];
-                this.undoPile = await this.addToUndoPile(clone(this.matrix), clone(this.undoPile));
-                this.matrix = clone(lastAction);
+                let lastAction = structuredClone(this.redoPile.pop()) as string[][];
+                let lastUnknownsAction = structuredClone(this.redoUnknownsPile.pop()) as string[];
+                this.undoPile.push(structuredClone(this.matrix));
+                this.undoUnknownsPile.push(structuredClone(this.unknownsColumn));
+                this.matrix = structuredClone(lastAction);
+                this.unknownsColumn = structuredClone(lastUnknownsAction);
             }
         },
     }
@@ -407,6 +537,38 @@ export default defineComponent({
 
 </script>
 <style scoped>
+.dimensoes {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.item-dimensoes {
+    margin: 0 10px;
+    padding-bottom: 20px;
+}
+
+ion-item.item-dimensoes {
+    width: 10%;
+    height: fit-content;
+}
+
+ion-note {
+    font-size: 12px;
+    position: fixed;
+}
+
+.item-dimensoes ion-input {
+    width: 50%;
+}
+
+.alerta-customizado .alert-wrapper {
+    background: #e5e5e5;
+}
+
 #container {
     text-align: center;
     position: top;
@@ -475,13 +637,13 @@ export default defineComponent({
 
 #matrixTable td {
     padding: 5px;
-    width: 70px;
+    width: 100px;
     height: 50px;
 }
 
 #unknownsTable td {
     padding: 5px 5px 0px 0px;
-    width: 50px;
+    width: 100px;
     height: 50px;
 }
 
@@ -490,7 +652,6 @@ table:after {
     content: '';
     height: 100%;
     position: absolute;
-    border-color: rgb(156, 156, 156);
     border-style: solid;
     width: 10px;
     top: -1px;
@@ -504,6 +665,22 @@ table:before {
 table:after {
     right: -2px;
     border-width: 2px 2px 2px 0px;
+}
+
+@media (prefers-color-scheme: light) {
+
+    table:before,
+    table:after {
+        border-color: #428cff;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+
+    table:before,
+    table:after {
+        border-color: rgb(156, 156, 156);
+    }
 }
 
 #actionButtons {
@@ -529,7 +706,7 @@ ion-select {
     margin-right: auto;
 }
 
-ion-item {
+.variable {
     display: flex;
     width: 80%;
     min-width: 40%;

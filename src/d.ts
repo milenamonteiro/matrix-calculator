@@ -1,5 +1,2 @@
-declare module "vue-katex" {
-	import { Plugin } from "vue";
-	const VueKatex: Plugin;
-	export default VueKatex;
-}
+declare module "algebra.js";
+declare module "nerdamer/all";
