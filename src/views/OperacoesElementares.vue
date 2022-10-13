@@ -652,7 +652,7 @@ ion-note {
 
 #unknownsTable td {
     padding: 5px 5px 0px 0px;
-    width: 100px;
+    width: 100%;
     height: 50px;
 }
 
