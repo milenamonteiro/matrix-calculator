@@ -294,6 +294,9 @@ export default defineComponent({
                         return false;
                     }
                 }
+                if (this.unknownsColumn[i] != '') {
+                    return false;
+                }
             }
             return true;
         },
@@ -508,6 +511,7 @@ export default defineComponent({
                 for (let j = 0; j < this.matrix[i].length; j++) {
                     this.matrix[i][j] = '';
                 }
+                this.unknownsColumn[i] = '';
             }
         },
         async undoAction() {
