@@ -110,6 +110,8 @@
                             </tr>
                         </table>
                     </div>
+                    <div class="grid-item">
+                    </div>
                 </div>
             </div>
         </ion-content>
