@@ -24,7 +24,7 @@
                     <div id="tableOptions" class="grid-item dimensoes">
                         <ion-label class="item-dimensoes">Dimensões</ion-label>
                         <ion-item class="item-dimensoes" fill="solid" ref="rowInput">
-                            <ion-input type="number" @ionInput="validateRowInput" value="3">
+                            <ion-input type="number" class="inputNumber" @ionInput="validateRowInput" value="3">
                             </ion-input>
                             <ion-note slot="helper">Linhas</ion-note>
                             <ion-note slot="error">Valor inválido</ion-note>
@@ -556,6 +556,15 @@ ion-item.item-dimensoes {
     height: fit-content;
 }
 
+
+@media only screen and (max-width: 600px) {
+
+    /* For mobile phones: */
+    ion-item.item-dimensoes {
+        width: 15%;
+    }
+}
+
 ion-note {
     font-size: 12px;
     position: fixed;
@@ -629,7 +638,7 @@ ion-note {
 #unknownsTable {
     text-align: center;
     position: top;
-    margin-left: 10px;
+    margin-left: 0px;
     margin-right: auto;
     left: 0;
     right: 0;
@@ -658,12 +667,12 @@ table:after {
 }
 
 table:before {
-    left: -2px;
+    left: 4px;
     border-width: 2px 0px 2px 2px;
 }
 
 table:after {
-    right: -2px;
+    right: 4px;
     border-width: 2px 2px 2px 0px;
 }
 
@@ -708,8 +717,7 @@ ion-select {
 
 .variable {
     display: flex;
-    width: 80%;
-    min-width: 40%;
+    width: 30%;
     position: center;
     grid-template-columns: 1fr 1fr;
     column-gap: 0px;
@@ -720,6 +728,7 @@ ion-select {
 
 .variable ion-label {
     text-align: center;
+    width: fit-content;
     border-collapse: collapse;
     margin-left: auto;
     margin-right: auto;
@@ -732,6 +741,14 @@ ion-select {
     margin-left: auto;
     margin-right: auto;
     position: relative;
+}
+
+@media only screen and (max-width: 700px) {
+
+    /* For mobile phones: */
+    .variable {
+        width: 80%;
+    }
 }
 
 h2 {

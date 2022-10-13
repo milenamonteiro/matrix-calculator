@@ -22,29 +22,75 @@
 
                 <div id="matrix" class="grid-container">
                     <div id="tableButtons" class="grid-item">
-                        <ion-button id="addDimension" color="primary" fill="outline" size="small" @click="addDimension">
-                            +
-                        </ion-button>
-                        <ion-button id="removeDimension" color="primary" fill="outline" size="small"
-                            @click="removeDimension">–
-                        </ion-button>
-                        <ion-button :disabled="isMatrixEmpty" id="clearTable" color="primary" fill="outline"
-                            size="small" @click="clearTable">
-                            Limpar</ion-button>
+                        <div id="tableOptions" class="grid-item dimensoes">
+                            <ion-label class="item-dimensoes">Dimensões</ion-label>
+                            <ion-item class="item-dimensoes" fill="solid" ref="rowInput">
+                                <ion-input type="number" class="inputNumber" @ionInput="validateRowInput" value="3">
+                                </ion-input>
+                                <ion-note slot="helper">Linhas</ion-note>
+                                <ion-note slot="error">Valor inválido</ion-note>
+                            </ion-item>
+                            <ion-label class="item-dimensoes">x</ion-label>
+                            <ion-item class="item-dimensoes" fill="solid" ref="columnInput">
+                                <ion-input type="number" @ionInput="validateColumnInput" value="3">
+                                </ion-input>
+                                <ion-note slot="helper">Colunas</ion-note>
+                                <ion-note slot="error">Valor inválido</ion-note>
+                            </ion-item>
+                        </div>
                     </div>
                     <div id="tableInput" class="grid-item">
                         <table id="matrixTable">
-                            <tr v-for="(row, index) in matrix" :key="index" v-bind:id="'row-'+index">
+                            <tr v-for="(row, index) in matrix1" :key="index" v-bind:id="'row-'+index">
                                 <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
-                                    <ion-input placeholder="0" v-model="matrix[index][index2]">
+                                    <ion-input placeholder="0" v-model="matrix1[index][index2]">
                                     </ion-input>
                                 </td>
                             </tr>
                         </table>
                     </div>
+                    <div class="grid-item">
+                        <ion-button :disabled="isMatrixEmpty" id="clearTable" color="primary" fill="outline"
+                            size="small" @click="clearTable">
+                            Limpar</ion-button>
+                    </div>
+
+                    <div id="table2Buttons" class="grid-item">
+                        <div id="table2Options" class="grid-item dimensoes">
+                            <ion-label class="item-dimensoes">Dimensões</ion-label>
+                            <ion-item class="item-dimensoes" fill="solid" ref="row2Input">
+                                <ion-input type="number" class="inputNumber" @ionInput="validateRow2Input" value="3">
+                                </ion-input>
+                                <ion-note slot="helper">Linhas</ion-note>
+                                <ion-note slot="error">Valor inválido</ion-note>
+                            </ion-item>
+                            <ion-label class="item-dimensoes">x</ion-label>
+                            <ion-item class="item-dimensoes" fill="solid" ref="column2Input">
+                                <ion-input type="number" @ionInput="validateColumn2Input" value="3">
+                                </ion-input>
+                                <ion-note slot="helper">Colunas</ion-note>
+                                <ion-note slot="error">Valor inválido</ion-note>
+                            </ion-item>
+                        </div>
+                    </div>
+                    <div id="table2Input" class="grid-item">
+                        <table id="matrix2Table">
+                            <tr v-for="(row, index) in matrix2" :key="index" v-bind:id="'row-'+index">
+                                <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
+                                    <ion-input placeholder="0" v-model="matrix2[index][index2]">
+                                    </ion-input>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="grid-item">
+                        <ion-button :disabled="isMatrixEmpty" id="clearTable" color="primary" fill="outline"
+                            size="small" @click="clearTable">
+                            Limpar</ion-button>
+                    </div>
                     <div id="result" class="grid-item">
                         <ion-button id="calculate" color="primary" fill="outline" size="small"
-                            @click="calculateInverseMatrix">
+                            @click="multiplyMatrixes">
                             Calcular</ion-button>
                     </div>
                     <div class="hr grid-item">
@@ -54,11 +100,11 @@
                             <h2>Resultado</h2>
                         </ion-label>
                     </div>
-                    <div id="inverseMatrixTable" class="grid-item">
-                        <table id="inverseMatrixTable">
-                            <tr v-for="(row, index) in inverseMatrix" :key="index" v-bind:id="'row-'+index">
+                    <div id="multipliedMatrixTable" class="grid-item">
+                        <table id="multipliedMatrixTable">
+                            <tr v-for="(row, index) in multipliedMatrix" :key="index" v-bind:id="'row-'+index">
                                 <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
-                                    <ion-input v-model="inverseMatrix[index][index2]" readonly>
+                                    <ion-input v-model="multipliedMatrix[index][index2]" readonly>
                                     </ion-input>
                                 </td>
                             </tr>
@@ -111,73 +157,150 @@ export default defineComponent({
         return {
             rows: 3,
             columns: 3,
-            matrix: [['', '', ''], ['', '', ''], ['', '', '']],
-            inverseMatrix: [['', '', ''], ['', '', ''], ['', '', '']],
+            matrix1: [['', '', ''], ['', '', ''], ['', '', '']],
+            matrix2: [['', '', ''], ['', '', ''], ['', '', '']],
+            multipliedMatrix: [['', '', ''], ['', '', ''], ['', '', '']]
         }
     },
     methods: {
+        multiplyMatrixes() {
+            let result; // nxn
+            for (let i = 0; i < this.rows; i++) {
+                for (let j = 0; j < this.columns; j++) {
+                    result = 0;
+                    for (let k = 0; k < this.columns; k++) {
+                        result += nerdamer(this.matrix1[i][k]) * nerdamer(this.matrix2[k][j]);
+                    }
+                    this.multipliedMatrix[i][j] = String(result);
+                }
+            }
+            return null;
+            /**
+             * input A and B, both n by n matrices
+                initialize C to be an n by n matrix of all zeros
+                for i from 1 to n:
+                    for j from 1 to n:
+                        for k from 1 to n:
+                            C[i][j] = C[i][j] + A[i][k]*B[k][j]
+                output C (as A*B)
+             */
+        },
+        adjustColumns(newColumns: number) {
+            if (newColumns > this.columns) {
+                for (let array in this.matrix1) {
+                    for (let i = this.columns; i < newColumns; i++) {
+                        this.matrix1[array].push('');
+                    }
+                }
+            }
+            else {
+                for (let array in this.matrix1) {
+                    for (let i = this.columns; i > newColumns; i--) {
+                        this.matrix1[array].pop();
+                    }
+                }
+            }
+            this.columns = newColumns;
+        },
+        adjustRows(newRows: number) {
+            if (newRows > this.rows) {
+                for (let i = 0; i < newRows - this.rows; i++) {
+                    let newRow = [];
+                    for (let j = 0; j < this.columns; j++) {
+                        newRow.push('');
+                    }
+                    this.matrix1.push(newRow);
+                }
+            }
+            else {
+                for (let i = 0; i < this.rows - newRows; i++) {
+                    this.matrix1.pop();
+                }
+            }
+            this.rows = newRows;
+        },
+        validateInput(value: any) {
+            if (value == '') {
+                return false;
+            }
+            try {
+                return isFinite(value) && value > 0;
+            }
+            catch (e) {
+                return false;
+            }
+        },
+        validateRowInput(ev: any) {
+            const value = ev.target.value;
+
+            (this.$refs as any).rowInput.$el.classList.remove('ion-valid');
+            (this.$refs as any).rowInput.$el.classList.remove('ion-invalid');
+
+            if (this.validateInput(value)) {
+                (this.$refs as any).rowInput.$el.classList.add('ion-valid');
+                this.adjustRows(value);
+            } else {
+                (this.$refs as any).rowInput.$el.classList.add('ion-invalid');
+            }
+        },
+        validateColumnInput(ev: any) {
+            const value = ev.target.value;
+
+            (this.$refs as any).columnInput.$el.classList.remove('ion-valid');
+            (this.$refs as any).columnInput.$el.classList.remove('ion-invalid');
+
+            if (this.validateInput(value)) {
+                (this.$refs as any).columnInput.$el.classList.add('ion-valid');
+                this.adjustColumns(value);
+            } else {
+                (this.$refs as any).columnInput.$el.classList.add('ion-invalid');
+            }
+        },
+        validateRow2Input(ev: any) {
+            const value = ev.target.value;
+
+            (this.$refs as any).row2Input.$el.classList.remove('ion-valid');
+            (this.$refs as any).row2Input.$el.classList.remove('ion-invalid');
+
+            if (this.validateInput(value)) {
+                (this.$refs as any).row2Input.$el.classList.add('ion-valid');
+                this.adjustRows(value);
+            } else {
+                (this.$refs as any).row2Input.$el.classList.add('ion-invalid');
+            }
+        },
+        validateColumn2Input(ev: any) {
+            const value = ev.target.value;
+
+            (this.$refs as any).column2Input.$el.classList.remove('ion-valid');
+            (this.$refs as any).column2Input.$el.classList.remove('ion-invalid');
+
+            if (this.validateInput(value)) {
+                (this.$refs as any).column2Input.$el.classList.add('ion-valid');
+                this.adjustColumns(value);
+            } else {
+                (this.$refs as any).column2Input.$el.classList.add('ion-invalid');
+            }
+        },
         isMatrixEmpty(): boolean {
-            for (let i = 0; i < this.matrix.length; i++) {
-                for (let j = 0; j < this.matrix[i].length; j++) {
-                    if (this.matrix[i][j] != '') {
+            for (let i = 0; i < this.matrix1.length; i++) {
+                for (let j = 0; j < this.matrix1[i].length; j++) {
+                    if (this.matrix1[i][j] != '') {
                         return false;
                     }
                 }
             }
             return true;
         },
-        calculateDeterminant(): number {
-            return 1;
-        },
-        calculateAdjointMatrix(): any {
-            return null;
-        },
-        calculateInverseMatrix() {
-            let matrix = this.matrix;
-            let rows = this.rows;
-            let columns = this.columns;
-            let inverseMatrix = this.inverseMatrix;
-            let determinant = this.calculateDeterminant();
-            if (determinant != 0) {
-                for (let i = 0; i < rows; i++) {
-                    for (let j = 0; j < columns; j++) {
-                        inverseMatrix[i][j] = nerdamer(matrix[j][i]).divide(determinant).text('fractions');
-                    }
-                }
-            }
-            else {
-                alert("A matriz não possui inversa");
-            }
-        },
-        addDimension() {
-            this.columns++;
-            this.rows++;
-            let newRow = [];
-            for (let array in this.matrix) {
-                this.matrix[array].push('');
-            }
-            for (let i = 0; i < this.columns; i++) {
-                newRow.push('');
-            }
-            this.matrix.push(newRow);
-        },
-        removeDimension() {
-            this.columns--;
-            this.rows--;
-            for (let array in this.matrix) {
-                this.matrix[array].pop();
-            }
-            this.matrix.pop();
-        },
         clearTable() {
-            for (let i = 0; i < this.matrix.length; i++) {
-                for (let j = 0; j < this.matrix[i].length; j++) {
-                    this.matrix[i][j] = '';
+            for (let i = 0; i < this.matrix1.length; i++) {
+                for (let j = 0; j < this.matrix1[i].length; j++) {
+                    this.matrix1[i][j] = '';
                 }
             }
         },
         textInput(event: any) {
-            this.matrix[this.rows][this.columns] = event.target.value;
+            this.matrix1[this.rows][this.columns] = event.target.value;
         }
     }
 });
@@ -186,6 +309,43 @@ export default defineComponent({
 
 </script>
 <style scoped>
+.dimensoes {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.item-dimensoes {
+    margin: 0 10px;
+    padding-bottom: 20px;
+}
+
+ion-item.item-dimensoes {
+    width: 10%;
+    height: fit-content;
+}
+
+
+@media only screen and (max-width: 600px) {
+
+    /* For mobile phones: */
+    ion-item.item-dimensoes {
+        width: 15%;
+    }
+}
+
+ion-note {
+    font-size: 12px;
+    position: fixed;
+}
+
+.item-dimensoes ion-input {
+    width: 50%;
+}
+
 #container {
     text-align: center;
     position: top;
@@ -223,8 +383,9 @@ export default defineComponent({
     transform: translateY(5%);
 }
 
-#inverseMatrixTable,
-#matrixTable {
+#matrixTable,
+#matrix2Table,
+#multipliedMatrixTable {
     text-align: center;
     position: relative;
     margin-left: auto;
@@ -233,8 +394,9 @@ export default defineComponent({
     right: 0;
 }
 
-#inverseMatrixTable td,
-#matrixTable td {
+#matrixTable td,
+#matrix2Table td,
+#multipliedMatrixTable td {
     padding: 5px;
     width: 100px;
     height: 50px;
@@ -258,12 +420,12 @@ table:after {
 }
 
 table:before {
-    left: -2px;
+    left: 2px;
     border-width: 2px 0px 2px 2px;
 }
 
 table:after {
-    right: -2px;
+    right: 2px;
     border-width: 2px 2px 2px 0px;
 }
 
@@ -293,31 +455,27 @@ table:after {
     text-align: center;
 }
 
-ion-select {
-    width: 80%;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-ion-item {
-    width: 20%;
-    margin-left: auto;
-    margin-right: auto;
-    --background: transparent;
-}
-
 h2 {
     font-weight: bold;
 }
 
-.alert-ios .alert-wrapper {
-    max-width: unset !important;
-    width: 100% !important;
+
+ion-input[type="number"]::-webkit-outer-spin-button,
+ion-input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+    -moz-appearance: textfield !important;
 }
 
-.alert-md .alert-wrapper {
-    max-width: unset !important;
-    width: 100% !important;
+ion-input[type="number"],
+input[type="number"] {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+    -moz-appearance: textfield !important;
 }
 </style>
   

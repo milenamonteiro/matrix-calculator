@@ -28,7 +28,7 @@
                         <ion-button id="removeDimension" color="primary" fill="outline" size="small"
                             @click="removeDimension">–
                         </ion-button>
-                        <ion-button :disabled="isMatrixEmpty" id="clearTable" color="primary" fill="outline"
+                        <ion-button :disabled="isMatrixEmpty()" id="clearTable" color="primary" fill="outline"
                             size="small" @click="clearTable">
                             Limpar</ion-button>
                     </div>
@@ -44,7 +44,7 @@
                     </div>
                     <div id="result" class="grid-item">
                         <ion-button id="calculate" color="primary" fill="outline" size="small"
-                            @click="calculateInverseMatrix">
+                            @click="calculateDeterminant">
                             Calcular</ion-button>
                     </div>
                     <div class="hr grid-item">
@@ -54,15 +54,10 @@
                             <h2>Resultado</h2>
                         </ion-label>
                     </div>
-                    <div id="inverseMatrixTable" class="grid-item">
-                        <table id="inverseMatrixTable">
-                            <tr v-for="(row, index) in inverseMatrix" :key="index" v-bind:id="'row-'+index">
-                                <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
-                                    <ion-input v-model="inverseMatrix[index][index2]" readonly>
-                                    </ion-input>
-                                </td>
-                            </tr>
-                        </table>
+                    <div class="grid-item">
+                        <ion-label>
+                            <h2>Determinante: {{resultDeterminant}}</h2>
+                        </ion-label>
                     </div>
                 </div>
             </div>
@@ -111,8 +106,8 @@ export default defineComponent({
         return {
             rows: 3,
             columns: 3,
-            matrix: [['', '', ''], ['', '', ''], ['', '', '']],
-            inverseMatrix: [['', '', ''], ['', '', ''], ['', '', '']],
+            matrix: [['2', '3', '4'], ['5', '6', '7'], ['3', '4', '8']],
+            resultDeterminant: ''
         }
     },
     methods: {
@@ -126,28 +121,57 @@ export default defineComponent({
             }
             return true;
         },
-        calculateDeterminant(): number {
-            return 1;
-        },
-        calculateAdjointMatrix(): any {
-            return null;
-        },
-        calculateInverseMatrix() {
-            let matrix = this.matrix;
-            let rows = this.rows;
-            let columns = this.columns;
-            let inverseMatrix = this.inverseMatrix;
-            let determinant = this.calculateDeterminant();
-            if (determinant != 0) {
-                for (let i = 0; i < rows; i++) {
-                    for (let j = 0; j < columns; j++) {
-                        inverseMatrix[i][j] = nerdamer(matrix[j][i]).divide(determinant).text('fractions');
+        calculateDeterminant() {
+            if (this.isMatrixEmpty()) {
+                this.resultDeterminant = 'Matriz vazia';
+                return;
+            }
+
+            let matrix = evaluateMatrix(this.matrix);
+
+            function echelonForm(): number {
+                let multiplier = 1;
+                let factor: number;
+                for (let i = 0; i < matrix.length - 1; i++) {
+                    let j = matrix.length - 1;
+                    while (j != i) {
+                        if (matrix[j][i] != '0') {
+                            try {
+                                factor = nerdamer(matrix[j][i]).divide(matrix[j - 1][i]).text('fractions');
+                            }
+                            catch (e) {
+                                for (let x = 0; x < matrix.length; x++) {
+                                    let temp = structuredClone(matrix[j][x]);
+                                    matrix[j][x] = structuredClone(matrix[j - 1][x]);
+                                    matrix[j - 1][x] = structuredClone(temp);
+                                    multiplier *= -1;
+                                }
+                                continue;
+                            }
+                            for (let k = 0; k < matrix.length; k++) {
+                                matrix[j][k] = nerdamer(matrix[j][k]).subtract(nerdamer(matrix[j - 1][k]).multiply(factor)).text('fractions');
+                                console.log(matrix[j][k]);
+                            }
+                        }
+                        j--;
                     }
                 }
+                return multiplier;
             }
-            else {
-                alert("A matriz não possui inversa");
+            let multiplier = echelonForm();
+            let determinant = nerdamer(1);
+            for (let i = 0; i < matrix.length; i++) {
+                if (matrix[i][i] == '') {
+                    matrix[i][i] = 0;
+                }
+                try {
+                    determinant = nerdamer(matrix[i][i]).multiply(determinant);
+                }
+                catch (e) {
+                    console.log(e);
+                }
             }
+            this.resultDeterminant = nerdamer(determinant).multiply(multiplier).text('fractions');
         },
         addDimension() {
             this.columns++;
@@ -258,12 +282,12 @@ table:after {
 }
 
 table:before {
-    left: -2px;
+    left: 2px;
     border-width: 2px 0px 2px 2px;
 }
 
 table:after {
-    right: -2px;
+    right: 2px;
     border-width: 2px 2px 2px 0px;
 }
 

@@ -116,6 +116,79 @@ export default defineComponent({
         }
     },
     methods: {
+        calculateDeterminant(matrix: any): string {
+            function echelonForm(): number {
+                let multiplier = 1;
+                let factor = 1;
+                for (let i = 0; i < matrix.length; i++) {
+                    for (let j = matrix.length - 1; j == i; j--) {
+                        if (matrix[j][i] == 0)
+                            continue;
+                        try {
+                            factor = nerdamer(matrix[j][i]).divide(matrix[j - 1][i]);
+                        }
+                        catch (e) {
+                            for (let x = 0; x < matrix.length; x++) {
+                                let temp = matrix[j][x];
+                                matrix[j][x] = matrix[j - 1][x];
+                                matrix[j - 1][x] = temp;
+                                multiplier *= -1;
+                            }
+                            continue;
+                        }
+                        for (let k = 0; k < matrix.length; k++) {
+                            matrix[j][k] = nerdamer(matrix[j][k]).subtract(nerdamer(matrix[j - 1][k]).multiply(factor));
+                        }
+                    }
+                }
+                return multiplier;
+            }
+            let multiplier = echelonForm();
+            let determinant = nerdamer(1);
+            for (let i = 0; i < matrix.length; i++) {
+                if (matrix[i][i] == '') {
+                    matrix[i][i] = 0;
+                }
+                try {
+                    determinant = nerdamer(matrix[i][i]).multiply(determinant);
+                }
+                catch (e) {
+                    console.log(e);
+                }
+            }
+            return nerdamer(determinant).multiply(multiplier).text('fractions');
+        },
+        calculateTransposeMatrix(): any {
+            let result = this.inverseMatrix;
+            for (let i = 0; i < result.length; i++) {
+                for (let j = 0; j < result[i].length; j++) {
+                    result[i][j] = this.matrix[j][i];
+                }
+            }
+            return result;
+        },
+        calculateCofactorMatrix(): any {
+            return null;
+        },
+        calculateAdjointMatrix(): any {
+            this.calculateCofactorMatrix();
+            return this.calculateTransposeMatrix();
+        },
+        calculateInverseMatrix() {
+            this.inverseMatrix = structuredClone(this.matrix);
+            let determinant = this.calculateDeterminant(structuredClone(this.inverseMatrix));
+            let adjoint = this.calculateAdjointMatrix();
+            if (determinant != '0') {
+                for (let i = 0; i < this.rows; i++) {
+                    for (let j = 0; j < this.columns; j++) {
+                        this.inverseMatrix[i][j] = nerdamer(adjoint[i][j]).divide(determinant).text('fractions');
+                    }
+                }
+            }
+            else {
+                alert("A matriz não possui inversa");
+            }
+        },
         isMatrixEmpty(): boolean {
             for (let i = 0; i < this.matrix.length; i++) {
                 for (let j = 0; j < this.matrix[i].length; j++) {
@@ -125,29 +198,6 @@ export default defineComponent({
                 }
             }
             return true;
-        },
-        calculateDeterminant(): number {
-            return 1;
-        },
-        calculateAdjointMatrix(): any {
-            return null;
-        },
-        calculateInverseMatrix() {
-            let matrix = this.matrix;
-            let rows = this.rows;
-            let columns = this.columns;
-            let inverseMatrix = this.inverseMatrix;
-            let determinant = this.calculateDeterminant();
-            if (determinant != 0) {
-                for (let i = 0; i < rows; i++) {
-                    for (let j = 0; j < columns; j++) {
-                        inverseMatrix[i][j] = nerdamer(matrix[j][i]).divide(determinant).text('fractions');
-                    }
-                }
-            }
-            else {
-                alert("A matriz não possui inversa");
-            }
         },
         addDimension() {
             this.columns++;
@@ -258,12 +308,12 @@ table:after {
 }
 
 table:before {
-    left: -2px;
+    left: 2px;
     border-width: 2px 0px 2px 2px;
 }
 
 table:after {
-    right: -2px;
+    right: 2px;
     border-width: 2px 2px 2px 0px;
 }
 

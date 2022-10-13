@@ -138,6 +138,26 @@ export default defineComponent({
 });
 </script>
 
+<style>
+ion-input[type="number"]::-webkit-outer-spin-button,
+ion-input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+    -moz-appearance: textfield !important;
+}
+
+ion-input[type="number"],
+input[type="number"] {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+    -moz-appearance: textfield !important;
+}
+</style>
+
 <style scoped>
 ion-menu ion-content {
     --background: var(--ion-item-background, var(--ion-background-color, #fff));
