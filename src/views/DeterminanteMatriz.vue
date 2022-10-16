@@ -56,8 +56,16 @@
                     </div>
                     <div class="grid-item">
                         <ion-label>
-                            <h2>Determinante: {{resultDeterminant}}</h2>
+                            <h2> Determinante: {{resultDeterminant}} </h2>
                         </ion-label>
+                        <br />
+                    </div>
+                    <div class="grid-item">
+                        <ion-label>
+                            <h2>Passos:</h2>
+                        </ion-label>
+                        <div id="steps" v-html="steps">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -72,6 +80,7 @@ import {
     IonInput, IonButton, IonLabel
 } from '@ionic/vue';
 import nerdamer from "nerdamer/all";
+import katex from 'katex';
 
 function evaluateMatrix(matrix: any): any {
     let result = structuredClone(matrix);
@@ -106,8 +115,9 @@ export default defineComponent({
         return {
             rows: 3,
             columns: 3,
-            matrix: [['2', '3', '4'], ['5', '6', '7'], ['3', '4', '8']],
-            resultDeterminant: ''
+            matrix: [['', '', ''], ['', '', ''], ['', '', '']],
+            resultDeterminant: '',
+            steps: "<br/>" as string
         }
     },
     methods: {
@@ -128,14 +138,27 @@ export default defineComponent({
             }
 
             let matrix = evaluateMatrix(this.matrix);
+            this.steps = "" as string;
 
-            function echelonForm(): number {
+            function echelonForm(): [number, string] {
+                let steps = "";
                 let multiplier = 1;
                 let factor: number;
                 for (let i = 0; i < matrix.length - 1; i++) {
                     let j = matrix.length - 1;
                     while (j != i) {
                         if (matrix[j][i] != '0') {
+                            let latex = "";
+                            latex += "\\begin{bmatrix}"
+                            for (let y = 0; y < matrix.length; y++) {
+                                latex += matrix[y].join(" & ") + "\\\\";
+                            }
+                            latex += "\\end{bmatrix}";
+
+                            steps += "<p>";
+                            steps += katex.renderToString(latex, { throwOnError: false }) + '<br/>';
+                            steps += "</p>";
+
                             try {
                                 factor = nerdamer(matrix[j][i]).divide(matrix[j - 1][i]).text('fractions');
                             }
@@ -146,32 +169,53 @@ export default defineComponent({
                                     matrix[j - 1][x] = structuredClone(temp);
                                     multiplier *= -1;
                                 }
+                                steps += "<p>" + katex.renderToString("R_" + (j + 1) + " \\leftrightarrow R_" + (j), { throwOnError: false }) + "</p>";
                                 continue;
                             }
+                            steps += "<p>" + katex.renderToString("R_" + (j + 1) + " \\gets R_" + (j + 1) + " - R_" + (j) + " \\cdot " + factor) + "</p>";
                             for (let k = 0; k < matrix.length; k++) {
                                 matrix[j][k] = nerdamer(matrix[j][k]).subtract(nerdamer(matrix[j - 1][k]).multiply(factor)).text('fractions');
-                                console.log(matrix[j][k]);
                             }
                         }
+
                         j--;
                     }
                 }
-                return multiplier;
+                let latex = "";
+                latex += "\\begin{bmatrix}"
+                for (let y = 0; y < matrix.length; y++) {
+                    latex += matrix[y].join(" & ") + "\\\\";
+                }
+                latex += "\\end{bmatrix}";
+
+                steps += "<p>";
+                steps += katex.renderToString(latex, { throwOnError: false }) + '<br/>';
+                steps += "</p>";
+                return [multiplier, steps];
             }
-            let multiplier = echelonForm();
+            let [multiplier, steps] = echelonForm();
+            this.steps += "<p>1. Escalonar a matriz: <br/></p>";
+            this.steps += steps;
+            this.steps += "<p>2. Multiplicar os valores da diagonal:</p>";
             let determinant = nerdamer(1);
+            let multiplicar = [];
             for (let i = 0; i < matrix.length; i++) {
                 if (matrix[i][i] == '') {
                     matrix[i][i] = 0;
                 }
                 try {
                     determinant = nerdamer(matrix[i][i]).multiply(determinant);
+                    multiplicar.push(matrix[i][i]);
                 }
                 catch (e) {
                     console.log(e);
                 }
             }
             this.resultDeterminant = nerdamer(determinant).multiply(multiplier).text('fractions');
+            this.steps += "<p>";
+            this.steps += katex.renderToString(multiplicar.join(" \\cdot ") + " = " + determinant, { throwOnError: false }) + '<br/>';
+            this.steps += "</p>";
+            this.steps += "<p>3. Para cada permutação efetuada\nnas linhas multiplica por -1: <br/><br/>" + katex.renderToString(multiplier + " \\cdot " + determinant + " = " + this.resultDeterminant) + "</p>";
         },
         addDimension() {
             this.columns++;

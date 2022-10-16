@@ -24,36 +24,41 @@
                     <div id="tableOptions" class="grid-item dimensoes">
                         <ion-label class="item-dimensoes">Dimensões</ion-label>
                         <ion-item class="item-dimensoes" fill="solid" ref="rowInput">
-                            <ion-input type="number" class="inputNumber" @ionInput="validateRowInput" value="3">
+                            <ion-input type="number" @ionInput="validateRowInput" @ionBlur="markRowTouched" value="3">
                             </ion-input>
                             <ion-note slot="helper">Linhas</ion-note>
                             <ion-note slot="error">Valor inválido</ion-note>
                         </ion-item>
                         <ion-label class="item-dimensoes">x</ion-label>
                         <ion-item class="item-dimensoes" fill="solid" ref="columnInput">
-                            <ion-input type="number" @ionInput="validateColumnInput" value="3">
+                            <ion-input type="number" @ionInput="validateColumnInput" @ionBlur="markColumnTouched"
+                                value="3">
                             </ion-input>
                             <ion-note slot="helper">Colunas</ion-note>
                             <ion-note slot="error">Valor inválido</ion-note>
                         </ion-item>
                     </div>
-                    <div id="tableInput" class="grid-item">
+                    <div id="tableInput" class="grid-item scrollit">
                         <div class="table-wrapper">
                             <table id="matrixTable">
-                                <tr v-for="(row, index) in matrix" :key="index" v-bind:id="'row-'+index">
-                                    <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
-                                        <ion-input placeholder="0" v-model="matrix[index][index2]">
-                                        </ion-input>
-                                    </td>
-                                </tr>
+                                <tbody>
+                                    <tr v-for="(row, index) in matrix" :key="index" v-bind:id="'row-'+index">
+                                        <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
+                                            <ion-input placeholder="0" v-model="matrix[index][index2]">
+                                            </ion-input>
+                                        </td>
+                                    </tr>
+                                </tbody>
                             </table>
                             <table id="unknownsTable">
-                                <tr v-for="(row, index) in unknownsColumn" :key="index" v-bind:id="'row2-'+index">
-                                    <td v-bind:id="'column2-'+index">
-                                        <ion-input placeholder="0" v-model="unknownsColumn[index]">
-                                        </ion-input>
-                                    </td>
-                                </tr>
+                                <tbody>
+                                    <tr v-for="(row, index) in unknownsColumn" :key="index" v-bind:id="'row2-'+index">
+                                        <td v-bind:id="'column2-'+index">
+                                            <ion-input placeholder="0" v-model="unknownsColumn[index]">
+                                            </ion-input>
+                                        </td>
+                                    </tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -66,7 +71,7 @@
                         </ion-button>
                         <ion-button id="clearTable" :disabled="isMatrixEmpty()" color="primary" fill="outline"
                             size="small" @click="clearTable">
-                            Limpar tabela</ion-button>
+                            Limpar matrizes</ion-button>
                     </div>
                     <div class="hr grid-item">
                     </div>
@@ -169,14 +174,14 @@
                                         </ion-item>
                                     </div>
                                     <div class="grid-item">
-                                        <ion-button id="op2Button" color="primary" fill="outline" size="small"
+                                        <ion-button id="op3Button" color="primary" fill="outline" size="small"
                                             @click="op3Function">
                                             Aplicar</ion-button>
                                     </div>
                                 </div>
+                                <div class="grid-item">
+                                </div>
                             </div>
-
-
                         </div>
                     </div>
                 </div>
@@ -356,6 +361,7 @@ export default defineComponent({
             if (this.validateInput(value)) {
                 (this.$refs as any).rowInput.$el.classList.add('ion-valid');
                 this.adjustRows(value);
+                (this.$refs as any).rowInput.$el.classList.add('ion-touched');
             } else {
                 (this.$refs as any).rowInput.$el.classList.add('ion-invalid');
             }
@@ -372,6 +378,14 @@ export default defineComponent({
             } else {
                 (this.$refs as any).columnInput.$el.classList.add('ion-invalid');
             }
+        },
+        markRowTouched() {
+            (this.$refs as any).rowInput.$el.classList.remove('ion-valid');
+            (this.$refs as any).rowInput.$el.classList.add('ion-touched');
+        },
+        markColumnTouched() {
+            (this.$refs as any).columnInput.$el.classList.remove('ion-valid');
+            (this.$refs as any).columnInput.$el.classList.add('ion-touched');
         },
         selectOperation(value: any) {
             var equation = document.getElementById("equation") as HTMLElement;
@@ -507,6 +521,8 @@ export default defineComponent({
             }
         },
         clearTable() {
+            this.undoPile.push(structuredClone(this.matrix));
+            this.undoUnknownsPile.push(structuredClone(this.unknownsColumn));
             for (let i = 0; i < this.matrix.length; i++) {
                 for (let j = 0; j < this.matrix[i].length; j++) {
                     this.matrix[i][j] = '';
@@ -518,8 +534,10 @@ export default defineComponent({
             if (this.undoPile.length > 1) {
                 let lastAction = structuredClone(this.undoPile.pop()) as string[][];
                 let lastUnknownsAction = structuredClone(this.undoUnknownsPile.pop()) as string[];
-                this.redoUnknownsPile.push(structuredClone(this.unknownsColumn));
-                this.redoPile.push(structuredClone(this.matrix));
+                if (!this.isMatrixEmpty()) {
+                    this.redoPile.push(structuredClone(this.matrix));
+                    this.redoUnknownsPile.push(structuredClone(this.unknownsColumn));
+                }
                 this.matrix = structuredClone(lastAction);
                 this.unknownsColumn = structuredClone(lastUnknownsAction);
             }
@@ -528,8 +546,10 @@ export default defineComponent({
             if (this.redoPile.length > 1) {
                 let lastAction = structuredClone(this.redoPile.pop()) as string[][];
                 let lastUnknownsAction = structuredClone(this.redoUnknownsPile.pop()) as string[];
-                this.undoPile.push(structuredClone(this.matrix));
-                this.undoUnknownsPile.push(structuredClone(this.unknownsColumn));
+                if (!this.isMatrixEmpty()) {
+                    this.undoPile.push(structuredClone(this.matrix));
+                    this.undoUnknownsPile.push(structuredClone(this.unknownsColumn));
+                }
                 this.matrix = structuredClone(lastAction);
                 this.unknownsColumn = structuredClone(lastUnknownsAction);
             }
@@ -613,6 +633,7 @@ ion-note {
 
 .table-wrapper {
     display: flex;
+    flex-direction: row;
     grid-template-columns: 1fr 1fr;
     column-gap: 0px;
     row-gap: 1px;
@@ -650,15 +671,15 @@ ion-note {
 
 #matrixTable td {
     padding: 5px;
-    width: 100px;
     height: 50px;
+    width: 100px;
 }
 
 #unknownsTable td {
     padding: 5px 5px 0px 0px;
-    width: 100%;
     height: 50px;
 }
+
 
 table:before,
 table:after {

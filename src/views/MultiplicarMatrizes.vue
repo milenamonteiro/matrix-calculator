@@ -24,15 +24,16 @@
                     <div id="tableButtons" class="grid-item">
                         <div id="tableOptions" class="grid-item dimensoes">
                             <ion-label class="item-dimensoes">Dimensões</ion-label>
-                            <ion-item class="item-dimensoes" fill="solid" ref="rowInput">
-                                <ion-input type="number" class="inputNumber" @ionInput="validateRowInput" value="3">
+                            <ion-item class="item-dimensoes" fill="solid" ref="row1Input">
+                                <ion-input @ionInput="validateRowInput" @ionBlur="markRow1Touched" value="3">
                                 </ion-input>
                                 <ion-note slot="helper">Linhas</ion-note>
                                 <ion-note slot="error">Valor inválido</ion-note>
                             </ion-item>
                             <ion-label class="item-dimensoes">x</ion-label>
-                            <ion-item class="item-dimensoes" fill="solid" ref="columnInput">
-                                <ion-input type="number" @ionInput="validateColumnInput" value="3">
+                            <ion-item class="item-dimensoes" fill="solid" ref="column1Input">
+                                <ion-input @ionInput="validateColumnInput" @ionBlur="markColumn1Touched"
+                                    v-model="tempColumns1">
                                 </ion-input>
                                 <ion-note slot="helper">Colunas</ion-note>
                                 <ion-note slot="error">Valor inválido</ion-note>
@@ -50,8 +51,8 @@
                         </table>
                     </div>
                     <div class="grid-item">
-                        <ion-button :disabled="isMatrixEmpty" id="clearTable" color="primary" fill="outline"
-                            size="small" @click="clearTable">
+                        <ion-button :disabled="isMatrixEmpty(matrix1)" id="clearTable" color="primary" fill="outline"
+                            size="small" @click="clearTable(matrix1)">
                             Limpar</ion-button>
                     </div>
 
@@ -59,14 +60,14 @@
                         <div id="table2Options" class="grid-item dimensoes">
                             <ion-label class="item-dimensoes">Dimensões</ion-label>
                             <ion-item class="item-dimensoes" fill="solid" ref="row2Input">
-                                <ion-input type="number" class="inputNumber" @ionInput="validateRow2Input" value="3">
+                                <ion-input @ionInput="validateRow2Input" @ionBlur="markRow2Touched" v-model="tempRows2">
                                 </ion-input>
                                 <ion-note slot="helper">Linhas</ion-note>
                                 <ion-note slot="error">Valor inválido</ion-note>
                             </ion-item>
                             <ion-label class="item-dimensoes">x</ion-label>
                             <ion-item class="item-dimensoes" fill="solid" ref="column2Input">
-                                <ion-input type="number" @ionInput="validateColumn2Input" value="3">
+                                <ion-input @ionInput="validateColumn2Input" @ionBlur="markColumn2Touched" value="3">
                                 </ion-input>
                                 <ion-note slot="helper">Colunas</ion-note>
                                 <ion-note slot="error">Valor inválido</ion-note>
@@ -84,8 +85,8 @@
                         </table>
                     </div>
                     <div class="grid-item">
-                        <ion-button :disabled="isMatrixEmpty" id="clearTable" color="primary" fill="outline"
-                            size="small" @click="clearTable">
+                        <ion-button :disabled="isMatrixEmpty(matrix2)" id="clearTable" color="primary" fill="outline"
+                            size="small" @click="clearTable(matrix2)">
                             Limpar</ion-button>
                     </div>
                     <div id="result" class="grid-item">
@@ -102,8 +103,8 @@
                     </div>
                     <div id="multipliedMatrixTable" class="grid-item">
                         <table id="multipliedMatrixTable">
-                            <tr v-for="(row, index) in multipliedMatrix" :key="index" v-bind:id="'row-'+index">
-                                <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column-'+index2">
+                            <tr v-for="(row, index) in multipliedMatrix" :key="index" v-bind:id="'row3-'+index">
+                                <td v-for="(cell, index2) in row" :key="index2" v-bind:id="'column3-'+index2">
                                     <ion-input v-model="multipliedMatrix[index][index2]" readonly>
                                     </ion-input>
                                 </td>
@@ -122,9 +123,10 @@
 import { defineComponent } from 'vue';
 import {
     IonButtons, IonContent, IonHeader, IonMenuButton, IonPage, IonTitle, IonToolbar,
-    IonInput, IonButton, IonLabel
+    IonInput, IonButton, IonLabel, IonItem, IonNote
 } from '@ionic/vue';
 import nerdamer from "nerdamer/all";
+import katex from 'katex';
 
 function evaluateMatrix(matrix: any): any {
     let result = structuredClone(matrix);
@@ -153,12 +155,27 @@ export default defineComponent({
         IonPage,
         IonTitle,
         IonToolbar,
-        IonInput, IonButton, IonLabel
+        IonInput,
+        IonButton,
+        IonLabel,
+        IonItem,
+        IonNote
+    },
+    setup() {
+        const c = katex.renderToString("c", {
+            throwOnError: false
+        });
+
+        return { c };
     },
     data() {
         return {
-            rows: 3,
-            columns: 3,
+            rows1: 3,
+            columns1: 3,
+            rows2: 3,
+            columns2: 3,
+            tempColumns1: 3,
+            tempRows2: 3,
             matrix1: [['', '', ''], ['', '', ''], ['', '', '']],
             matrix2: [['', '', ''], ['', '', ''], ['', '', '']],
             multipliedMatrix: [['', '', ''], ['', '', ''], ['', '', '']]
@@ -166,67 +183,62 @@ export default defineComponent({
     },
     methods: {
         multiplyMatrixes() {
-            let result; // nxn
-            for (let i = 0; i < this.rows; i++) {
-                for (let j = 0; j < this.columns; j++) {
-                    result = 0;
-                    for (let k = 0; k < this.columns; k++) {
-                        result += nerdamer(this.matrix1[i][k]) * nerdamer(this.matrix2[k][j]);
+            let matrix1 = evaluateMatrix(this.matrix1);
+            let matrix2 = evaluateMatrix(this.matrix2);
+            let result = Array(this.rows1).fill('').map(() => Array(this.columns2).fill(''));
+            for (let i = 0; i < matrix1.length; i++) {
+                result[i] = [];
+                for (let j = 0; j < matrix2[0].length; j++) {
+                    let sum = nerdamer('0');
+                    for (let k = 0; k < matrix1[0].length; k++) {
+                        sum = sum.add(nerdamer(matrix1[i][k]).multiply(matrix2[k][j]));
                     }
-                    this.multipliedMatrix[i][j] = String(result);
+                    result[i][j] = sum;
                 }
             }
-            return null;
-            /**
-             * input A and B, both n by n matrices
-                initialize C to be an n by n matrix of all zeros
-                for i from 1 to n:
-                    for j from 1 to n:
-                        for k from 1 to n:
-                            C[i][j] = C[i][j] + A[i][k]*B[k][j]
-                output C (as A*B)
-             */
+            this.multipliedMatrix = result;
         },
-        adjustColumns(newColumns: number) {
-            if (newColumns > this.columns) {
-                for (let array in this.matrix1) {
-                    for (let i = this.columns; i < newColumns; i++) {
-                        this.matrix1[array].push('');
+        adjustColumns(matrix: string[][], oldColumns: number, newColumns: number) {
+            if (newColumns > oldColumns) {
+                for (let array in matrix) {
+                    for (let i = oldColumns; i < newColumns; i++) {
+                        matrix[array].push('');
                     }
                 }
             }
             else {
-                for (let array in this.matrix1) {
-                    for (let i = this.columns; i > newColumns; i--) {
-                        this.matrix1[array].pop();
+                for (let array in matrix) {
+                    for (let i = oldColumns; i > newColumns; i--) {
+                        matrix[array].pop();
                     }
                 }
             }
-            this.columns = newColumns;
+            oldColumns = newColumns;
         },
-        adjustRows(newRows: number) {
-            if (newRows > this.rows) {
-                for (let i = 0; i < newRows - this.rows; i++) {
+        adjustRows(matrix: string[][], columns: number, oldRows: number, newRows: number) {
+            if (newRows > oldRows) {
+                for (let i = 0; i < newRows - oldRows; i++) {
                     let newRow = [];
-                    for (let j = 0; j < this.columns; j++) {
+                    for (let j = 0; j < columns; j++) {
                         newRow.push('');
                     }
-                    this.matrix1.push(newRow);
+                    matrix.push(newRow);
                 }
             }
             else {
-                for (let i = 0; i < this.rows - newRows; i++) {
-                    this.matrix1.pop();
+                for (let i = 0; i < oldRows - newRows; i++) {
+                    matrix.pop();
                 }
             }
-            this.rows = newRows;
+            oldRows = newRows;
         },
         validateInput(value: any) {
+
             if (value == '') {
                 return false;
             }
             try {
-                return isFinite(value) && value > 0;
+                return isFinite(value) && value > 0 && !isNaN(value);
             }
             catch (e) {
                 return false;
@@ -235,27 +247,40 @@ export default defineComponent({
         validateRowInput(ev: any) {
             const value = ev.target.value;
 
-            (this.$refs as any).rowInput.$el.classList.remove('ion-valid');
-            (this.$refs as any).rowInput.$el.classList.remove('ion-invalid');
+            (this.$refs as any).row1Input.$el.classList.remove('ion-valid');
+            (this.$refs as any).row1Input.$el.classList.remove('ion-invalid');
 
             if (this.validateInput(value)) {
-                (this.$refs as any).rowInput.$el.classList.add('ion-valid');
-                this.adjustRows(value);
+                (this.$refs as any).row1Input.$el.classList.add('ion-valid');
+                this.adjustRows(this.matrix1, this.columns1, this.rows1, value);
+                this.rows1 = value;
             } else {
-                (this.$refs as any).rowInput.$el.classList.add('ion-invalid');
+                (this.$refs as any).row1Input.$el.classList.add('ion-invalid');
             }
         },
         validateColumnInput(ev: any) {
             const value = ev.target.value;
 
-            (this.$refs as any).columnInput.$el.classList.remove('ion-valid');
-            (this.$refs as any).columnInput.$el.classList.remove('ion-invalid');
+            (this.$refs.column1Input as any).$el.classList.remove('ion-valid');
+            (this.$refs.column1Input as any).$el.classList.remove('ion-invalid');
+
 
             if (this.validateInput(value)) {
-                (this.$refs as any).columnInput.$el.classList.add('ion-valid');
-                this.adjustColumns(value);
+                if (value != this.tempRows2) {
+                    alert('O número de colunas da primeira matriz deve ser igual ao número de linhas da segunda matriz.');
+                    (this.$refs as any).column1Input.$el.classList.add('ion-invalid');
+                } else {
+                    (this.$refs as any).column1Input.$el.classList.add('ion-valid');
+                    this.adjustColumns(this.matrix1, this.columns1, value);
+                    this.columns1 = value;
+                    if (this.rows2 != value) {
+                        this.adjustRows(this.matrix2, this.columns2, this.rows2, value);
+                        this.rows2 = value;
+                        (this.$refs.row2Input as any).$el.classList.remove('ion-invalid');
+                    }
+                }
             } else {
-                (this.$refs as any).columnInput.$el.classList.add('ion-invalid');
+                (this.$refs as any).column1Input.$el.classList.add('ion-invalid');
             }
         },
         validateRow2Input(ev: any) {
@@ -265,8 +290,20 @@ export default defineComponent({
             (this.$refs as any).row2Input.$el.classList.remove('ion-invalid');
 
             if (this.validateInput(value)) {
-                (this.$refs as any).row2Input.$el.classList.add('ion-valid');
-                this.adjustRows(value);
+                if (value != this.tempColumns1) {
+                    alert('O número de colunas da primeira matriz deve ser igual ao número de linhas da segunda matriz.');
+                    (this.$refs as any).row2Input.$el.classList.add('ion-invalid');
+                }
+                else {
+                    (this.$refs as any).row2Input.$el.classList.add('ion-valid');
+                    this.adjustRows(this.matrix2, this.columns2, this.rows2, value);
+                    this.rows2 = value;
+                    if (this.columns1 != value) {
+                        this.adjustColumns(this.matrix1, this.columns1, value);
+                        this.columns1 = value;
+                        (this.$refs.column1Input as any).$el.classList.remove('ion-invalid');
+                    }
+                }
             } else {
                 (this.$refs as any).row2Input.$el.classList.add('ion-invalid');
             }
@@ -279,30 +316,44 @@ export default defineComponent({
 
             if (this.validateInput(value)) {
                 (this.$refs as any).column2Input.$el.classList.add('ion-valid');
-                this.adjustColumns(value);
+                this.adjustColumns(this.matrix2, this.columns2, value);
+                this.columns2 = value;
             } else {
                 (this.$refs as any).column2Input.$el.classList.add('ion-invalid');
             }
         },
-        isMatrixEmpty(): boolean {
-            for (let i = 0; i < this.matrix1.length; i++) {
-                for (let j = 0; j < this.matrix1[i].length; j++) {
-                    if (this.matrix1[i][j] != '') {
+        markRow1Touched() {
+            (this.$refs as any).row1Input.$el.classList.remove('ion-valid');
+            (this.$refs as any).row1Input.$el.classList.add('ion-touched');
+        },
+        markColumn1Touched() {
+            (this.$refs as any).column1Input.$el.classList.remove('ion-valid');
+            (this.$refs as any).column1Input.$el.classList.add('ion-touched');
+        },
+        markRow2Touched() {
+            (this.$refs as any).row2Input.$el.classList.remove('ion-valid');
+            (this.$refs as any).row2Input.$el.classList.add('ion-touched');
+        },
+        markColumn2Touched() {
+            (this.$refs as any).column2Input.$el.classList.remove('ion-valid');
+            (this.$refs as any).column2Input.$el.classList.add('ion-touched');
+        },
+        isMatrixEmpty(matrix: string[][]): boolean {
+            for (let i = 0; i < matrix.length; i++) {
+                for (let j = 0; j < matrix[i].length; j++) {
+                    if (matrix[i][j] != '') {
                         return false;
                     }
                 }
             }
             return true;
         },
-        clearTable() {
-            for (let i = 0; i < this.matrix1.length; i++) {
-                for (let j = 0; j < this.matrix1[i].length; j++) {
-                    this.matrix1[i][j] = '';
+        clearTable(matrix: string[][]) {
+            for (let i = 0; i < matrix.length; i++) {
+                for (let j = 0; j < matrix[i].length; j++) {
+                    matrix[i][j] = '';
                 }
             }
-        },
-        textInput(event: any) {
-            this.matrix1[this.rows][this.columns] = event.target.value;
         }
     }
 });

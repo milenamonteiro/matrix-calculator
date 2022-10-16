@@ -38,7 +38,7 @@ import {
     archiveOutline, archiveSharp, bookmarkOutline, bookmarkSharp,
     cubeSharp, heartOutline, heartSharp, invertModeSharp, mailOutline, mailSharp,
     paperPlaneOutline, paperPlaneSharp, trashOutline, trashSharp, warningOutline,
-    warningSharp
+    warningSharp, locateSharp, calculatorSharp
 } from 'ionicons/icons';
 
 
@@ -76,14 +76,14 @@ export default defineComponent({
             {
                 title: 'Determinante',
                 url: '/Determinante',
-                iosIcon: invertModeSharp,
-                mdIcon: invertModeSharp
+                iosIcon: locateSharp,
+                mdIcon: locateSharp
             },
             {
                 title: 'Multiplicação',
                 url: '/Multiplicacao',
-                iosIcon: invertModeSharp,
-                mdIcon: invertModeSharp
+                iosIcon: calculatorSharp,
+                mdIcon: calculatorSharp
             }
         ];
 
